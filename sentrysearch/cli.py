@@ -20,7 +20,7 @@ def index(path, chunk_duration, overlap):
     import os
     from .chunker import chunk_video, scan_directory
     from .embedder import embed_chunks
-    from .store import get_collection, store_embeddings
+    from .store import SentryStore
 
     if os.path.isdir(path):
         videos = scan_directory(path)
@@ -28,17 +28,22 @@ def index(path, chunk_duration, overlap):
         videos = [path]
 
     click.echo(f"Found {len(videos)} video(s) to index.")
-    collection = get_collection()
+    store = SentryStore()
 
     for video_path in videos:
+        abs_path = str(os.path.abspath(video_path))
+        if store.is_indexed(abs_path):
+            click.echo(f"Skipping {video_path} (already indexed).")
+            continue
         click.echo(f"Processing {video_path}...")
         chunks = chunk_video(video_path, chunk_duration=chunk_duration, overlap=overlap)
         click.echo(f"  Created {len(chunks)} chunk(s).")
-        embeddings = embed_chunks(chunks)
-        store_embeddings(collection, embeddings)
-        click.echo(f"  Indexed {len(embeddings)} chunk(s).")
+        embedded = embed_chunks(chunks)
+        store.add_chunks(embedded)
+        click.echo(f"  Indexed {len(embedded)} chunk(s).")
 
-    click.echo("Indexing complete.")
+    stats = store.get_stats()
+    click.echo(f"Done. {stats['total_chunks']} chunks from {stats['unique_source_files']} file(s) in store.")
 
 
 @cli.command()

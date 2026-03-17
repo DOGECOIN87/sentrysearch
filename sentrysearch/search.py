@@ -1,7 +1,7 @@
 """Query and retrieval logic."""
 
 from .embedder import embed_query
-from .store import get_collection, query_collection
+from .store import SentryStore
 
 
 def search_clips(query: str, n_results: int = 5) -> list[dict]:
@@ -15,5 +15,5 @@ def search_clips(query: str, n_results: int = 5) -> list[dict]:
         List of result dicts sorted by relevance score (descending).
     """
     query_embedding = embed_query(query)
-    collection = get_collection()
-    return query_collection(collection, query_embedding, n_results=n_results)
+    store = SentryStore()
+    return store.search(query_embedding, n_results=n_results)
