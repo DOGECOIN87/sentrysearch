@@ -1,6 +1,8 @@
 """Click-based CLI entry point."""
 
 import os
+import platform
+import subprocess
 import sys
 
 import click
@@ -13,6 +15,20 @@ def _fmt_time(seconds: float) -> str:
     """Format seconds as MM:SS."""
     m, s = divmod(int(seconds), 60)
     return f"{m:02d}:{s:02d}"
+
+
+def _open_file(path: str) -> None:
+    """Open a file with the system's default application."""
+    try:
+        system = platform.system()
+        if system == "Darwin":
+            subprocess.Popen(["open", path])
+        elif system == "Windows":
+            os.startfile(path)
+        else:
+            subprocess.Popen(["xdg-open", path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass  # non-critical — clip is already saved
 
 
 def _handle_error(e: Exception) -> None:
@@ -178,6 +194,7 @@ def search(query, n_results, output_dir, trim, verbose):
             from .trimmer import trim_top_result
             clip_path = trim_top_result(results, output_dir)
             click.echo(f"\nSaved clip: {clip_path}")
+            _open_file(clip_path)
 
     except Exception as e:
         _handle_error(e)
